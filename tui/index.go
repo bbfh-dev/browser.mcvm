@@ -5,7 +5,6 @@ import (
 	"math"
 	"strings"
 
-	"github.com/bbfh-dev/browser.mcvm/pkg/mcvm"
 	"github.com/bbfh-dev/browser.mcvm/tui/screen"
 	"github.com/bbfh-dev/browser.mcvm/tui/style"
 	tea "github.com/charmbracelet/bubbletea"
@@ -29,7 +28,6 @@ type IndexModel struct {
 	viewFooter   string
 	sizeHeader   int
 	sizeFooter   int
-	packageList  []string
 }
 
 func NewIndexModel() IndexModel {
@@ -55,24 +53,7 @@ func (model IndexModel) renderHeader() (string, int) {
 }
 
 func (model IndexModel) renderContents() string {
-	if len(model.packageList) == 0 {
-		return style.DefaultStyle.Width(model.Width - 1).
-			AlignHorizontal(lipgloss.Center).
-			Render(style.WithIcon(style.DATABASE_ICON, "No data"))
-	}
-
-	var test strings.Builder
-
-	for _, pkg := range model.packageList {
-		test.WriteString(
-			lipgloss.NewStyle().
-				Width(model.Width-1).
-				Render(pkg) +
-				"\n",
-		)
-	}
-
-	return test.String()
+	return SCREENS[model.current].View(model.Width - 1)
 }
 
 func (model IndexModel) renderFooter() (string, int) {
@@ -145,14 +126,8 @@ func (model IndexModel) limitScroll() IndexModel {
 	return model
 }
 
-type UpdatePackagesMsg struct {
-	Packages []string
-}
-
 func (model IndexModel) Init() tea.Cmd {
-	return func() tea.Msg {
-		return UpdatePackagesMsg{mcvm.ListAllPackages()}
-	}
+	return nil
 }
 
 func (model IndexModel) Update(raw tea.Msg) (tea.Model, tea.Cmd) {
