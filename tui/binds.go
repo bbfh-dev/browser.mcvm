@@ -8,4 +8,5 @@ var KEYBINDS = map[string]widget.Keybind{
 	"goto.bottom": widget.NewKeybind("G"),
 	"scroll.up":   widget.NewKeybind("down", "J"),
 	"scroll.down": widget.NewKeybind("up", "K"),
+	"search":      widget.NewKeybind("/"),
 }
