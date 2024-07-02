@@ -21,10 +21,17 @@ var HeaderStyle = defaultStyle{
 	lipgloss.NewStyle().Border(lipgloss.NormalBorder(), false, false, true),
 }
 
+var InactiveFooterStyle = defaultStyle{
+	lipgloss.NewStyle().
+		Foreground(REGULAR_COLOR).
+		Padding(0, 1).
+		MaxHeight(1),
+}
+
 var FooterStyle = defaultStyle{
 	lipgloss.NewStyle().
 		Foreground(REGULAR_COLOR).
-		Background(ACCENT_COLOR).
+		Background(SEARCH_COLOR).
 		Padding(0, 1).
 		MaxHeight(1),
 }
@@ -35,10 +42,14 @@ func PackageStyle(card Card, selected bool) cardStyle {
 			Border(lipgloss.RoundedBorder(), true, true, false, true).
 			Padding(0, 1).
 			Foreground(REGULAR_COLOR),
+		MiddleStyle: lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder(), false, true, false, true).
+			Padding(0, 1).
+			Foreground(HINT_COLOR),
 		BottomStyle: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder(), false, true, true, true).
 			Padding(0, 1).
-			Foreground(INACTIVE_COLOR),
+			Foreground(REGULAR_COLOR),
 		card:     card,
 		selected: selected,
 	}
