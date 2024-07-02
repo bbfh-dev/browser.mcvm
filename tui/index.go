@@ -7,6 +7,7 @@ import (
 
 	"github.com/bbfh-dev/browser.mcvm/tui/screen"
 	"github.com/bbfh-dev/browser.mcvm/tui/style"
+	"github.com/bbfh-dev/browser.mcvm/tui/widget"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -28,13 +29,21 @@ type IndexModel struct {
 	viewFooter   string
 	sizeHeader   int
 	sizeFooter   int
+	searchWidget widget.SearchWidget
 }
 
 func NewIndexModel() IndexModel {
 	model := IndexModel{
-		Width:   MINIMUM_WIDTH,
-		Height:  MINIMUM_HEIGHT,
-		current: 0,
+		Width:        MINIMUM_WIDTH,
+		Height:       MINIMUM_HEIGHT,
+		current:      0,
+		scroll:       0,
+		viewHeader:   "",
+		viewContents: "",
+		viewFooter:   "",
+		sizeHeader:   0,
+		sizeFooter:   0,
+		searchWidget: widget.NewSearchWidget(),
 	}
 
 	return model
@@ -42,10 +51,19 @@ func NewIndexModel() IndexModel {
 
 func (model IndexModel) renderHeader() (string, int) {
 	title := " " + style.TextStyle.Render(-1, style.WithIcon(style.GAME_ICON, "MCVM Browser"))
+	var rightSide string
+
+	if !model.searchWidget.Empty() {
+		rightSide = style.WithIcon(
+			style.SEARCH_ICON,
+			fmt.Sprintf("Search: %q", model.searchWidget.Text),
+		)
+	}
+
 	version := lipgloss.PlaceHorizontal(
 		model.Width-lipgloss.Width(title)-1,
 		lipgloss.Right,
-		style.HintStyle.Render(-1, "by bbfh"),
+		style.AccentStyle.Render(-1, rightSide),
 	)
 
 	contents := style.HeaderStyle.Render(model.Width, lipgloss.JoinHorizontal(0, title, version))
@@ -53,14 +71,26 @@ func (model IndexModel) renderHeader() (string, int) {
 }
 
 func (model IndexModel) renderContents() string {
-	return SCREENS[model.current].View(model.Width - 1)
+	return SCREENS[model.current].SetSearch(model.searchWidget.Text).View(model.Width - 1)
 }
 
 func (model IndexModel) renderFooter() (string, int) {
-	contents := style.FooterStyle.Render(
-		model.Width,
-		style.WithIcon(style.LIST_ICON, "0 Packages installed"),
-	)
+	var contents string
+
+	if model.searchWidget.Focused {
+		contents = style.FooterStyle.Render(
+			model.Width,
+			style.WithIcon(
+				style.SEARCH_ICON,
+				"FIND (`@` to filter by user): "+model.searchWidget.Text+"󰗧",
+			),
+		)
+	} else {
+		contents = style.InactiveFooterStyle.Render(
+			model.Width,
+			style.WithIcon(style.LIST_ICON, "Carbon smashed this footer!"),
+		)
+	}
 
 	return contents, lipgloss.Height(contents)
 }
@@ -132,12 +162,24 @@ func (model IndexModel) Init() tea.Cmd {
 
 func (model IndexModel) Update(raw tea.Msg) (tea.Model, tea.Cmd) {
 	var commands []tea.Cmd
+	var eventCaptured bool
 
 	switch msg := raw.(type) {
 
 	case tea.WindowSizeMsg:
 		model.Width, model.Height = msg.Width, msg.Height
 	case tea.KeyMsg:
+		// Handle as edge-case to ensure it always quits the app
+		if msg.String() == "ctrl+c" {
+			return model, tea.Quit
+		}
+
+		if model.searchWidget.Focused {
+			model.searchWidget = model.searchWidget.HandleTyping(msg)
+			eventCaptured = true
+			break
+		}
+
 		switch {
 		case KEYBINDS["quit"].Matches(msg):
 			return model, tea.Quit
@@ -151,11 +193,15 @@ func (model IndexModel) Update(raw tea.Msg) (tea.Model, tea.Cmd) {
 		case KEYBINDS["goto.bottom"].Matches(msg):
 			model.scroll = math.MaxInt32
 			SCREENS[model.current] = SCREENS[model.current].GotoBottom()
+		case KEYBINDS["search"].Matches(msg):
+			model.searchWidget = model.searchWidget.Focus()
 		}
 	}
-	screen, cmd := SCREENS[model.current].Update(raw)
-	SCREENS[model.current] = screen
-	commands = append(commands, cmd)
+	if !eventCaptured {
+		screen, cmd := SCREENS[model.current].Update(raw)
+		SCREENS[model.current] = screen
+		commands = append(commands, cmd)
+	}
 
 	model = model.limitScroll()
 

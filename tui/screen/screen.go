@@ -7,6 +7,7 @@ type Screen interface {
 	View(width int) string
 	GotoTop() Screen
 	GotoBottom() Screen
+	SetSearch(input string) Screen
 }
 
 const (

@@ -18,14 +18,21 @@ var KEYBINDS = map[string]widget.Keybind{
 }
 
 type HomeScreen struct {
-	Packages []widget.PackageWidget
-	current  int
-	ready    bool
-	loaded   bool
+	Packages  []widget.PackageWidget
+	current   int
+	ready     bool
+	loaded    bool
+	searchFor string
 }
 
 func NewHomeScreen() HomeScreen {
-	return HomeScreen{}
+	return HomeScreen{
+		Packages:  []widget.PackageWidget{},
+		current:   0,
+		ready:     false,
+		loaded:    false,
+		searchFor: "",
+	}
 }
 
 type loadPackagesMsg struct {
@@ -118,5 +125,10 @@ func (screen HomeScreen) GotoTop() Screen {
 
 func (screen HomeScreen) GotoBottom() Screen {
 	screen.current = len(screen.Packages) - 1
+	return screen
+}
+
+func (screen HomeScreen) SetSearch(input string) Screen {
+	screen.searchFor = input
 	return screen
 }
