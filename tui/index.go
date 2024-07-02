@@ -146,16 +146,16 @@ func (model IndexModel) Update(raw tea.Msg) (tea.Model, tea.Cmd) {
 		case KEYBINDS["scroll.down"].Matches(msg):
 			model.scroll -= 1
 		case KEYBINDS["goto.top"].Matches(msg):
-			model.scroll = math.MaxInt32
-		case KEYBINDS["goto.bottom"].Matches(msg):
 			model.scroll = 0
+			SCREENS[model.current] = SCREENS[model.current].GotoTop()
+		case KEYBINDS["goto.bottom"].Matches(msg):
+			model.scroll = math.MaxInt32
+			SCREENS[model.current] = SCREENS[model.current].GotoBottom()
 		}
-		screen, cmd := SCREENS[model.current].Update(msg)
-		SCREENS[model.current] = screen
-		commands = append(commands, cmd)
-	case UpdatePackagesMsg:
-		model.packageList = msg.Packages
 	}
+	screen, cmd := SCREENS[model.current].Update(raw)
+	SCREENS[model.current] = screen
+	commands = append(commands, cmd)
 
 	model = model.limitScroll()
 
