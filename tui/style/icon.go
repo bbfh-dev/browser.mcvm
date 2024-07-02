@@ -13,6 +13,7 @@ const (
 	GAME_ICON     icon = "󰍳 "
 	LIST_ICON     icon = "󱉯 "
 	DATABASE_ICON icon = " "
+	PACK_ICON     icon = "󰆦 "
 )
 
 // Prepends an icon if --icons CLI flag is on
