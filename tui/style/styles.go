@@ -9,6 +9,10 @@ var HintStyle = defaultStyle{
 	lipgloss.NewStyle().Foreground(HINT_COLOR),
 }
 
+var AccentStyle = defaultStyle{
+	lipgloss.NewStyle().Foreground(ACCENT_COLOR),
+}
+
 var InactiveStyle = defaultStyle{
 	lipgloss.NewStyle().Foreground(INACTIVE_COLOR),
 }
