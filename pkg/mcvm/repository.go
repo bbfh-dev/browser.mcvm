@@ -1,11 +1,26 @@
 package mcvm
 
+import "log"
+
 // FIXME: Currently uses MCVM CLI to parse repository list
 func ListRepositories() []string {
-	return ReadMCVMOutput("pkg", "repo", "ls", "--raw")
+	result, err := ExecMCVM("pkg", "repo", "ls", "--raw")
+	if err != nil {
+		log.Panicf("Failed to list repositories: %v", err)
+	}
+	return result
 }
 
 // FIXME: Currently uses MCVM CLI to parse all packages
 func ListAllPackages() []string {
-	return ReadMCVMOutput("pkg", "list-all")
+	result, err := ExecMCVM("pkg", "list-all")
+	if err != nil {
+		log.Panicf("Failed to list all packages: %v", err)
+	}
+	return result
+}
+
+// FIXME: Currently uses MCVM CLI
+func PackageMetadata(id string) (string, error) {
+	return ExecMCVMRaw("pkg", "info", "-r", id)
 }

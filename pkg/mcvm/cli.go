@@ -6,11 +6,21 @@ import (
 )
 
 // Reads MCVM command output as an array of strings
-func ReadMCVMOutput(args ...string) []string {
+func ExecMCVMRaw(args ...string) (string, error) {
 	cmd, err := exec.Command("mcvm", args...).Output()
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
-	return strings.Split(strings.TrimSuffix(string(cmd), "\n"), "\n")
+	return string(cmd), nil
+}
+
+// Reads MCVM command output as an array of strings
+func ExecMCVM(args ...string) ([]string, error) {
+	cmd, err := ExecMCVMRaw(args...)
+	if err != nil {
+		return nil, nil
+	}
+
+	return strings.Split(strings.TrimSuffix(cmd, "\n"), "\n"), nil
 }
