@@ -64,6 +64,48 @@ func (screen HomeScreen) limitCurrent() HomeScreen {
 	return screen
 }
 
+type filterPackageFunc func(widget.PackageWidget, string) bool
+
+func filterPackageByContents(pkg widget.PackageWidget, searchString string) bool {
+	return strings.Contains(pkg.Id, searchString) ||
+		strings.Contains(strings.ToLower(pkg.Name()), searchString)
+}
+
+func filterPackageByAuthor(pkg widget.PackageWidget, searchString string) bool {
+	for _, author := range pkg.Authors() {
+		if strings.Contains(strings.ToLower(author), searchString[1:]) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (screen HomeScreen) listPackages() []widget.PackageWidget {
+	if widget.HasInput(screen.searchFor) {
+		searchString := strings.ToLower(screen.searchFor)
+		var pkgs []widget.PackageWidget
+
+		var filterFunc filterPackageFunc
+
+		if strings.HasPrefix(searchString, "@") {
+			filterFunc = filterPackageByAuthor
+		} else {
+			filterFunc = filterPackageByContents
+		}
+
+		for _, pkg := range screen.Packages {
+			if filterFunc(pkg, searchString) {
+				pkgs = append(pkgs, pkg)
+			}
+		}
+
+		return pkgs
+	}
+
+	return screen.Packages
+}
+
 func (screen HomeScreen) Update(raw tea.Msg) (Screen, tea.Cmd) {
 	if !screen.ready {
 		screen.ready = true
@@ -109,7 +151,7 @@ func (screen HomeScreen) View(width int) string {
 
 	var test strings.Builder
 
-	for i, pkg := range screen.Packages {
+	for i, pkg := range screen.listPackages() {
 		test.WriteString(
 			style.PackageStyle(pkg, i == screen.current).RenderLine(width, pkg.Id),
 		)
