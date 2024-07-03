@@ -70,7 +70,7 @@ func (widget PackageWidget) Extra() string {
 		entries = append(entries, style.WithIcon(" ", strings.Join(authors, ", ")))
 	}
 
-	return strings.Join(entries, " 󰧞 ")
+	return strings.Join(entries, " • ")
 }
 
 func getJSONStringArray(source string, query string) (entries []string) {
