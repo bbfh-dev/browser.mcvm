@@ -1,6 +1,7 @@
 package screen
 
 import (
+	"math"
 	"strings"
 
 	"github.com/bbfh-dev/browser.mcvm/cli"
@@ -23,6 +24,7 @@ type HomeScreen struct {
 	ready     bool
 	loaded    bool
 	searchFor string
+	tab       int
 }
 
 func NewHomeScreen() HomeScreen {
@@ -106,6 +108,10 @@ func (screen HomeScreen) listPackages() []widget.PackageWidget {
 	return screen.Packages
 }
 
+func (screen HomeScreen) getPageCount() int {
+	return int(math.Ceil(float64(len(screen.Packages)) / float64(widget.ITEMS_PER_PAGE)))
+}
+
 func (screen HomeScreen) Update(raw tea.Msg) (Screen, tea.Cmd) {
 	if !screen.ready {
 		screen.ready = true
@@ -136,28 +142,41 @@ func (screen HomeScreen) Update(raw tea.Msg) (Screen, tea.Cmd) {
 	return screen, tea.Batch(commands...)
 }
 
-func (screen HomeScreen) View(width int) string {
+func (screen HomeScreen) View(width int) (string, []widget.Tab) {
 	if !screen.loaded {
 		return style.DefaultStyle.Width(width).
 			AlignHorizontal(lipgloss.Center).
-			Render(style.WithIcon(style.DATABASE_ICON, "Loading packages info..."))
+			Render(style.WithIcon(style.DATABASE_ICON, "Loading packages info...")), []widget.Tab{}
 	}
 
 	if len(screen.Packages) == 0 {
 		return style.DefaultStyle.Width(width).
 			AlignHorizontal(lipgloss.Center).
-			Render(style.WithIcon(style.DATABASE_ICON, "No data"))
+			Render(style.WithIcon(style.DATABASE_ICON, "No data")), []widget.Tab{}
 	}
 
 	var test strings.Builder
 
-	for i, pkg := range screen.listPackages() {
+	packages := screen.listPackages()
+	begin := screen.CurrentTab() * widget.ITEMS_PER_PAGE
+	end := screen.CurrentTab()*widget.ITEMS_PER_PAGE + widget.ITEMS_PER_PAGE
+	if end >= len(packages) {
+		end = len(packages) - 1
+	}
+
+	for i, pkg := range packages[begin:end] {
 		test.WriteString(
 			style.PackageStyle(pkg, i == screen.current).RenderLine(width, pkg.Id),
 		)
 	}
 
-	return test.String()
+	count := screen.getPageCount()
+	var tabs = make([]widget.Tab, count)
+	for i := range screen.getPageCount() {
+		tabs[i] = widget.NewSimpleTab(i)
+	}
+
+	return test.String(), tabs
 }
 
 func (screen HomeScreen) GotoTop() Screen {
@@ -172,5 +191,23 @@ func (screen HomeScreen) GotoBottom() Screen {
 
 func (screen HomeScreen) SetSearch(input string) Screen {
 	screen.searchFor = input
+	return screen
+}
+
+func (screen HomeScreen) CurrentTab() int {
+	return screen.tab
+}
+
+func (screen HomeScreen) SwitchTab(tab int) Screen {
+	screen.tab = tab
+
+	if screen.tab < 0 {
+		screen.tab = 0
+	}
+
+	if screen.tab >= screen.getPageCount() {
+		screen.tab = screen.getPageCount() - 1
+	}
+
 	return screen
 }

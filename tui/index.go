@@ -10,6 +10,7 @@ import (
 	"github.com/bbfh-dev/browser.mcvm/tui/widget"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/samber/lo"
 )
 
 const MINIMUM_WIDTH = 32
@@ -30,6 +31,7 @@ type IndexModel struct {
 	sizeHeader   int
 	sizeFooter   int
 	searchWidget widget.SearchWidget
+	tabs         []widget.Tab
 }
 
 func NewIndexModel() IndexModel {
@@ -70,29 +72,46 @@ func (model IndexModel) renderHeader() (string, int) {
 	return contents, lipgloss.Height(contents)
 }
 
-func (model IndexModel) renderContents() string {
+func (model IndexModel) renderContents() (string, []widget.Tab) {
 	return SCREENS[model.current].SetSearch(model.searchWidget.Text).View(model.Width - 1)
 }
 
 func (model IndexModel) renderFooter() (string, int) {
-	var contents string
+	var contents strings.Builder
+
+	currentTab := SCREENS[model.current].CurrentTab()
+	if len(model.tabs) > 0 {
+		contents.WriteString(
+			style.TabStyle.Render(
+				model.Width-1,
+				strings.Join(lo.Map(model.tabs, func(tab widget.Tab, index int) string {
+					if index == currentTab {
+						return tab.Focused()
+					}
+					return tab.Normal()
+				}), " "),
+			),
+		)
+		contents.WriteString("\n")
+	}
 
 	if model.searchWidget.Focused {
-		contents = style.FooterStyle.Render(
+		contents.WriteString(style.FooterStyle.Render(
 			model.Width,
 			style.WithIcon(
 				style.SEARCH_ICON,
 				"FIND (`@` to filter by user): "+model.searchWidget.Text+"󰗧",
 			),
-		)
+		))
 	} else {
-		contents = style.InactiveFooterStyle.Render(
+		contents.WriteString(style.InactiveFooterStyle.Render(
 			model.Width,
 			style.WithIcon(style.LIST_ICON, "Carbon smashed this footer!"),
-		)
+		))
 	}
 
-	return contents, lipgloss.Height(contents)
+	result := contents.String()
+	return result, lipgloss.Height(result)
 }
 
 func (model IndexModel) scrollStart() int {
@@ -141,8 +160,9 @@ func (model IndexModel) toScrollableWindow(contents string, height int) string {
 }
 
 func (model IndexModel) limitScroll() IndexModel {
+	contents, _ := model.renderContents()
 	limit := lipgloss.Height(
-		model.renderContents(),
+		contents,
 	) - (model.Height - model.sizeHeader - model.sizeFooter)
 
 	if model.scroll >= limit {
@@ -195,6 +215,10 @@ func (model IndexModel) Update(raw tea.Msg) (tea.Model, tea.Cmd) {
 			SCREENS[model.current] = SCREENS[model.current].GotoBottom()
 		case KEYBINDS["search"].Matches(msg):
 			model.searchWidget = model.searchWidget.Focus()
+		case KEYBINDS["tab.previous"].Matches(msg):
+			SCREENS[model.current] = SCREENS[model.current].SwitchTab(SCREENS[model.current].CurrentTab() - 1)
+		case KEYBINDS["tab.next"].Matches(msg):
+			SCREENS[model.current] = SCREENS[model.current].SwitchTab(SCREENS[model.current].CurrentTab() + 1)
 		}
 	}
 	if !eventCaptured {
@@ -208,7 +232,8 @@ func (model IndexModel) Update(raw tea.Msg) (tea.Model, tea.Cmd) {
 	// Render in Update() so that its able to calculate scroll properly
 	header, headerHeight := model.renderHeader()
 	footer, footerHeight := model.renderFooter()
-	contents := model.renderContents()
+	contents, tabs := model.renderContents()
+	model.tabs = tabs
 	scrollableWindow := model.toScrollableWindow(contents, model.Height-headerHeight-footerHeight-1)
 	model.viewHeader = header
 	model.viewFooter = footer

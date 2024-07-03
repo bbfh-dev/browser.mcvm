@@ -55,5 +55,9 @@ func PackageStyle(card Card, selected bool) cardStyle {
 	}
 }
 
+var TabStyle = defaultStyle{
+	lipgloss.NewStyle().AlignHorizontal(lipgloss.Center).Foreground(REGULAR_COLOR),
+}
+
 var ScrollBackground = InactiveStyle.Render(1, "┃")
 var ScrollForeground = TextStyle.Render(1, "┃")
